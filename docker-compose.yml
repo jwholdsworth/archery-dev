@@ -1,0 +1,35 @@
+version: '2'
+services:
+  site:
+    tty: true
+    build: ../archery-site
+    ports:
+      - "8080:80"
+    environment:
+      APPLICATION_ENV: development
+
+  mysql:
+    image: mysql:5.6
+    volumes:
+      - db_data:/var/lib/mysql
+    restart: always
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: secret
+
+  redis:
+    image: redis:3-alpine
+    volumes:
+      - redis_data:/data
+    restart: always
+    ports:
+      - "6379:6379"
+
+volumes:
+  db_data:
+  redis_data:
+
+# networks:
+#   dev:
+#     external: true
