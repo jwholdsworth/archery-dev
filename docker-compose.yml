@@ -2,34 +2,73 @@ version: '2'
 services:
   site:
     tty: true
+    # the location of the Dockerfile we want to build from
     build: ../archery-site
+
+    # mount the app directory in archery-site directly into our container.
+    # This allows us to edit files locally, and have them replicated in the container in real time.
+    volumes:
+      - ../archery-site/app:/app
+
+    # Command to start the webserver
+    command: python3 manage.py runserver 0.0.0.0:8080
+
+    # Expose port 8080 within the container to 8080 on the host.
+    # This allows us to hit http://localhost:8080 in a browser and have it route into this container.
     ports:
-      - "8080:80"
+      - "8080:8080"
+
+    # Add friendly address names from within our web container to the mysql and redis containers
+    # Under the hood, this just adds them to /etc/hosts inside the container
+    links:
+      - mysql
+      - redis
+
+    # Don't start this container until MySQL and Redis are both up and running
+    depends_on:
+      - mysql
+      - redis
+
+    # Add some environment variables
     environment:
       APPLICATION_ENV: development
 
   mysql:
+    # Use a stock MySQL image from DockerHub
     image: mysql:5.6
+
+    # Use a local volume for MySQL's data directory.
+    # This means if we destroy the container, the data is kept for when we spin up a new one.
     volumes:
       - db_data:/var/lib/mysql
+
+    # Restart the container if MySQL crashes
     restart: always
+
+    # Expose the MySQL port (3306) from the container to the host.
+    # This allows you to connect to MySQL using a friendly tool, such as MySQL workbench, amongst other advantages when developing.
     ports:
       - "3306:3306"
+
+    # Add some environment variables
     environment:
       MYSQL_ROOT_PASSWORD: secret
 
   redis:
+    # Use a stock Redis image from DockerHub
     image: redis:3-alpine
+
+    # Again, use a local volume for the redis data so if we destroy it, we can rebuild the container without losing the data within it
     volumes:
       - redis_data:/data
+
+    # Restart if Redis crashes
     restart: always
+
+    # Expose the Redis port to your local machine
     ports:
       - "6379:6379"
 
 volumes:
   db_data:
   redis_data:
-
-# networks:
-#   dev:
-#     external: true
